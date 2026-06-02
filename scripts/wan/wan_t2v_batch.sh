@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-# examples/5 and examples/6 are identical in the source checkout; prompt 7 is
-# used as the sixth unique prompt by default.
-PROMPT_IDS="${PROMPT_IDS:-1 2 3 4 5 7}"
+PROMPT_IDS="${PROMPT_IDS:-1 2 3 4 5 6}"
 METHODS="${METHODS:-dense svg sap rhyme rhyme_sap}"
 GPU_IDS="${GPU_IDS:-0}"
 INFER_STEP="${INFER_STEP:-50}"

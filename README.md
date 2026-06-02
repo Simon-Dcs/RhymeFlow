@@ -1,39 +1,55 @@
-# RhymeFlow
+<p align="center">
+  <h1 align="center">RhymeFlow: Training-Free Acceleration for Video Generation with Asynchronous Denoising Flow Scheduling</h1>
+  <h3 align="center"><a href="https://arxiv.org/abs/2604.08370">Paper</a> | <a href="https://drive.google.com/file/d/11m6sbfPQDMKlIYYH2Z628UjGO1ASPuLm/view?usp=sharing">Project Page</a></h3>
+</p>
 
-Training-free acceleration for Wan2.1 text-to-video generation.
+## TODO List
 
-This repository is the Wan2.1 T2V-focused release subset of the Sparse-VideoGen
-experiments. It contains the Diffusers Wan2.1 inference entrypoint, sparse
-attention baselines, RhymeFlow keyframe-preserving generation, and scripts for
-Dense-reference speed/quality comparison.
-
-## Scope
-
-Current release scope:
-
-- Model family: Wan2.1 T2V through Hugging Face Diffusers.
-- Default model: `Wan-AI/Wan2.1-T2V-1.3B-Diffusers`.
-- Default benchmark shape: 720x1280, 81 frames, 50 denoising steps, seed 0.
-- Methods: Dense, SVG, SAP, RhymeFlow, and RhymeFlow+SAP.
-
-Not included in this release subset: HunyuanVideo, CogVideoX, Cosmos, I2V
-scripts, checkpoints, generated videos, and local experiment result folders.
+- ✅ Release the Wan 2.1 adaptation.
+- 🚧 Release the HunyuanVideo adaptation.
 
 ## Installation
 
-Use a CUDA-enabled Python environment. The original experiments were run in the
-`SVG` conda environment with PyTorch, Diffusers 0.34.0, FlashInfer, and RAPIDS
-cuVS available.
+Begin by cloning the repository:
 
 ```bash
-cd /home/dcs/RhymeFlow
-pip install -e .
+git clone https://github.com/Simon-Dcs/RhymeFlow.git
+cd RhymeFlow
 ```
 
-SAP uses KMeans/block-sparse attention and needs FlashInfer plus RAPIDS cuVS
-installed for your CUDA version. Dense and RhymeFlow share the same codepath
-imports, so keeping the full acceleration environment installed is the safest
-way to reproduce the reported numbers.
+We recommend using CUDA versions 12.4 / 12.8 + PyTorch versions 2.5.1 / 2.6.0
+
+```bash
+# 1. Create and activate conda environment
+conda create -n rhymeflow python==3.12.9 # or 3.11.9 if have error when installing kernels
+conda activate rhymeflow
+
+# 2. Install uv, then install other packages
+pip install uv
+uv pip install -e .
+
+pip install flash-attn --no-build-isolation
+
+# 4. Install customized kernels. (You might need to upgrade your cmake and CUDA version.)
+pip install -U setuptools # Require at least version 77.0.0
+git submodule update --init --recursive
+cd svg/kernels
+pip install -U cmake
+bash setup.sh
+
+# 5. Install FlashInfer (standard) and cuVS
+cd 3rdparty/flashinfer
+pip install --no-build-isolation --verbose --editable .
+pip install cuvs-cu12 --extra-index-url=https://pypi.nvidia.com
+
+# Optional: If the FlashInfer monkey patch fails in your environment,
+# install the manually patched FlashInfer (block sparse with varied block sizes).
+cd 3rdparty/flashinfer
+cp ../../../../assets/patches/modifications.patch ./
+git apply modifications.patch
+pip install --no-build-isolation --verbose --editable . # Block Sparse Attention with varied block sizes
+```
+
 
 ## Quick Start
 
@@ -52,13 +68,11 @@ Available `METHOD` values:
 | `sap` | `sap_default_q300_k800_tp092` | `q=300,k=800,top_p=0.92,min_kc_ratio=0.10,iter=50/2` |
 | `rhyme` | `rhyme_tw10_m2_skip3-5` | `Tw=10,M=2,skip=3-5,semantic keyframes,scheduler_approx` |
 | `rhyme_sap` | `rhyme_sap_tw8_m3_skip3-5_q350_k1200_tp098_min020_it5` | `Tw=8,M=3,skip=3-5` plus `q=350,k=1200,top_p=0.98,min_kc_ratio=0.20,iter=5/2` |
-
-The RhymeFlow defaults preserve explicit keyframes. The open-source scripts do
-not enable `--rhyme_no_keyframes`.
+ 
 
 ## Batch Reproduction
 
-Run the default six unique prompts, excluding the duplicate prompt 6:
+Run the default prompts:
 
 ```bash
 GPU_IDS="0 1 2 3" bash scripts/wan/wan_t2v_batch.sh
@@ -67,7 +81,7 @@ GPU_IDS="0 1 2 3" bash scripts/wan/wan_t2v_batch.sh
 The default prompt list is:
 
 ```text
-1 2 3 4 5 7
+1 2 3 4 5 6
 ```
 
 You can override the method set:
@@ -76,45 +90,9 @@ You can override the method set:
 METHODS="dense sap rhyme rhyme_sap" GPU_IDS="0 1 2 3" bash scripts/wan/wan_t2v_batch.sh
 ```
 
-## Evaluation
+## Citation
 
-After generation, compute PSNR/SSIM/LPIPS against each prompt's Dense output:
-
-```bash
-METRIC_GPU=0 bash scripts/wan/wan_t2v_eval.sh
-```
-
-Metrics are Dense pseudo-reference metrics, not human ground-truth quality
-scores. Higher PSNR/SSIM and lower LPIPS indicate the accelerated sample stayed
-closer to the Dense sample for the same prompt and seed.
-
-## Important Defaults
-
-These defaults reflect the current Wan2.1 T2V reproduction state:
-
-- SAP default follows the script-level default used in the experiments:
-  `q=300,k=800,top_p=0.92,min_kc_ratio=0.10,iter=50/2`.
-- SVG default uses `sparsity=0.3`.
-- RhymeFlow default uses the keyframe-preserving balanced prompt-3 grid setting:
-  `Tw10/M2/skip3-5`.
-- RhymeFlow+SAP default uses the best keyframe-preserving prompt-3 setting found
-  against SAP default: `Tw8/M3/skip3-5 + q350/k1200/top_p0.98/min0.20/iter5-2`.
-
-See `docs/WAN_T2V_DEFAULTS.md` and the copied experiment notes under `docs/`
-for the measured prompt-3 tradeoffs.
-
-## Repository Layout
-
-```text
-wan_t2v_inference.py        Main Wan2.1 T2V inference entrypoint.
-dataloader.py               Prompt loading helper.
-svg/models/wan/             Wan sparse attention and RhymeFlow implementation.
-svg/utils/                  Seed, metric, and keyframe utilities.
-svg/kernels/triton/         Optional Triton helper kernels.
-scripts/wan/                Reproduction launch/evaluation scripts.
-scripts/eval/               Dense-reference metric scripts.
-examples/*/prompt.txt       Example prompts.
-docs/                       Reproduction notes and default parameter rationale.
+```bibtex
 ```
 
 ## License

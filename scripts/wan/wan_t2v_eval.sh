@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROMPT_IDS="${PROMPT_IDS:-1 2 3 4 5 7}"
+PROMPT_IDS="${PROMPT_IDS:-1 2 3 4 5 6}"
 INFER_STEP="${INFER_STEP:-50}"
 HEIGHT="${HEIGHT:-720}"
 WIDTH="${WIDTH:-1280}"
