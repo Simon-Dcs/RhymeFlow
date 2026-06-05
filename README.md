@@ -1,6 +1,6 @@
 <p align="center">
   <h1 align="center">RhymeFlow: Training-Free Acceleration for Video Generation with Asynchronous Denoising Flow Scheduling</h1>
-  <h3 align="center"><a href="https://arxiv.org/abs/2604.08370">Paper</a> | <a href="https://drive.google.com/file/d/11m6sbfPQDMKlIYYH2Z628UjGO1ASPuLm/view?usp=sharing">Project Page</a></h3>
+  <h3 align="center"><a href="https://arxiv.org/abs/2606.06309">Paper</a> | <a href="https://simon-dcs.github.io/Website-of-RhymeFlow/">Project Page</a></h3>
 </p>
 
 ## TODO List
@@ -93,6 +93,12 @@ METHODS="dense sap rhyme rhyme_sap" GPU_IDS="0 1 2 3" bash scripts/wan/wan_t2v_b
 ## Citation
 
 ```bibtex
+@article{dai2026rhymeflow,
+  title={RhymeFlow: Training-Free Acceleration for Video Generation with Asynchronous Denoising Flow Scheduling},
+  author={Dai, Chensheng and Zhang, Shengjun and Li, Yifan and Zhang, Zhang and Zhu, Zheng and Duan, Yueqi},
+  journal={arXiv preprint arXiv:2606.06309},
+  year={2026}
+}
 ```
 
 ## License
